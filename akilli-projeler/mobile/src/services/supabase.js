@@ -2,96 +2,39 @@ import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Supabase URL ve API anahtarını tanımla
-// Not: Gerçek bir uygulamada bunları .env dosyasında saklamalısınız
-const supabaseUrl = 'https://example.supabase.co';  // Örnek geçerli URL
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4YW1wbGUiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTYxNjE1MzgwMCwiZXhwIjoxOTMxNzI5ODAwfQ.example';  // Örnek geçerli anahtar
+const supabaseUrl = 'https://mmdgtacdykxjtgmepmcq.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tZGd0YWNkeWt4anRnbWVwbWNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQwMTQ5NjIsImV4cCI6MjA1OTU5MDk2Mn0.DnHmDQvVzeU09tIyWJVVNNYDkS3SnlTa9p5axZE29r8';
 
-// Mock Supabase istemcisi
-const supabase = {
+// Supabase istemcisini oluştur
+const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
-    signInWithPassword: async () => {
-      // Başarılı giriş simülasyonu
-      return {
-        data: {
-          user: {
-            id: '1',
-            email: 'test@example.com',
-            name: 'Test User'
-          },
-          session: {
-            access_token: 'mock_token'
-          }
-        },
-        error: null
-      };
-    },
-    signUp: async () => {
-      // Başarılı kayıt simülasyonu
-      return {
-        data: {
-          user: {
-            id: '1',
-            email: 'test@example.com'
-          },
-          session: null
-        },
-        error: null
-      };
-    },
-    signOut: async () => {
-      // Başarılı çıkış simülasyonu
-      return { error: null };
-    },
-    getUser: async () => {
-      // Kullanıcı bilgisi simülasyonu
-      return {
-        data: {
-          user: {
-            id: '1',
-            email: 'test@example.com',
-            name: 'Test User'
-          }
-        },
-        error: null
-      };
-    },
-    onAuthStateChange: () => {
-      // Auth state değişikliği dinleme simülasyonu
-      return {
-        data: {
-          unsubscribe: () => {}
-        }
-      };
-    }
+    storage: AsyncStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+    flowType: 'pkce',
+    debug: __DEV__,
   },
-  from: () => {
-    return {
-      select: () => {
-        return {
-          eq: () => {
-            return {
-              single: async () => {
-                // Veri getirme simülasyonu
-                return { data: null, error: null };
-              }
-            };
-          }
-        };
-      },
-      insert: async () => {
-        // Veri ekleme simülasyonu
-        return { data: [], error: null };
-      },
-      update: async () => {
-        // Veri güncelleme simülasyonu
-        return { data: [], error: null };
-      },
-      delete: async () => {
-        // Veri silme simülasyonu
-        return { error: null };
-      }
-    };
+  global: {
+    headers: {
+      'apikey': supabaseKey,
+    },
+  },
+});
+
+// Auth state değişikliklerini dinle
+supabase.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    await AsyncStorage.setItem('userSession', JSON.stringify(session));
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+    }
+  } else if (event === 'SIGNED_OUT') {
+    await AsyncStorage.removeItem('userSession');
+    await AsyncStorage.removeItem('user');
   }
-};
+});
 
 export default supabase;
+export { supabaseUrl, supabaseKey };

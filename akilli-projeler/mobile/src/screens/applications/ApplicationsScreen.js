@@ -126,6 +126,13 @@ const ApplicationsScreen = ({ route, navigation }) => {
     Alert.alert('Bilgi', 'Kullanıcı profil sayfası yakında eklenecek.');
   };
 
+  const handleProjectPress = (projectId) => {
+    navigation.navigate('Projects', {
+      screen: 'ProjectDetail',
+      params: { id: projectId }
+    });
+  };
+
   const renderApplicationItem = ({ item }) => (
     <View style={styles.applicationCard}>
       <View style={styles.applicationHeader}>
@@ -138,7 +145,9 @@ const ApplicationsScreen = ({ route, navigation }) => {
               <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarText}>{item.user.name.charAt(0)}</Text>
+                <Text style={styles.avatarText}>
+                  {item.user?.name ? item.user.name.charAt(0) : '?'}
+                </Text>
               </View>
             )}
           </View>
@@ -234,10 +243,13 @@ const ApplicationsScreen = ({ route, navigation }) => {
       </View>
       
       {project && (
-        <View style={styles.projectInfo}>
+        <TouchableOpacity 
+          style={styles.projectInfo}
+          onPress={() => handleProjectPress(project.id)}
+        >
           <Text style={styles.projectTitle}>{project.title}</Text>
           <Text style={styles.projectAcademic}>{project.academic}</Text>
-        </View>
+        </TouchableOpacity>
       )}
       
       <FlatList

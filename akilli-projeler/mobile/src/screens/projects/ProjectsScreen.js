@@ -40,17 +40,37 @@ const ProjectsScreen = ({ navigation }) => {
             id: 1,
             title: 'E-Ticaret Platformu Geliştirme',
             description: 'Küçük işletmeler için özelleştirilmiş e-ticaret platformu geliştirme projesi.',
-            academic: 'Dr. Ayşe Yılmaz',
-            tags: ['Web', 'React', 'Node.js'],
-            progress: 45,
+            requirements: ['React', 'Node.js', 'PostgreSQL'],
+            max_students: 3,
+            start_date: '2024-04-01',
+            end_date: '2024-09-01',
+            status: 'active',
+            mentor: {
+              id: 1,
+              title: 'Dr.',
+              name: 'Ayşe',
+              surname: 'Yılmaz',
+              department: 'Computer Engineering',
+              expertise_areas: ['Web Development', 'Database Systems']
+            }
           },
           {
             id: 2,
             title: 'Yapay Zeka Destekli Mobil Uygulama',
             description: 'Doğal dil işleme teknikleri kullanarak kullanıcı davranışlarını analiz eden mobil uygulama.',
-            academic: 'Prof. Dr. Mehmet Kaya',
-            tags: ['AI', 'NLP', 'Mobile'],
-            progress: 62,
+            requirements: ['Python', 'TensorFlow', 'React Native'],
+            max_students: 2,
+            start_date: '2024-05-01',
+            end_date: '2024-10-01',
+            status: 'active',
+            mentor: {
+              id: 2,
+              title: 'Prof. Dr.',
+              name: 'Mehmet',
+              surname: 'Kaya',
+              department: 'Computer Engineering',
+              expertise_areas: ['AI', 'Machine Learning']
+            }
           },
           {
             id: 3,
@@ -103,28 +123,45 @@ const ProjectsScreen = ({ navigation }) => {
     >
       <View style={styles.projectHeader}>
         <Text style={styles.projectTitle}>{item.title}</Text>
-        <Text style={styles.projectProgress}>{item.progress}%</Text>
+        <Text style={styles.projectStatus}>{item.status}</Text>
       </View>
       
-      <Text style={styles.projectAcademic}>{item.academic}</Text>
+      <Text style={styles.mentorInfo}>
+        {item.mentor?.title} {item.mentor?.name} {item.mentor?.surname}
+      </Text>
       
       <Text style={styles.projectDescription} numberOfLines={2}>
         {item.description}
       </Text>
       
-      <View style={styles.tagsContainer}>
-        {item.tags && item.tags.map((tag, index) => (
-          <View key={index} style={styles.tag}>
-            <Text style={styles.tagText}>{tag}</Text>
+      <View style={styles.projectDetails}>
+        <Text style={styles.detailText}>
+          <Ionicons name="people-outline" size={16} /> Max: {item.max_students} öğrenci
+        </Text>
+        <Text style={styles.detailText}>
+          <Ionicons name="calendar-outline" size={16} /> Bitiş: {new Date(item.end_date).toLocaleDateString('tr-TR')}
+        </Text>
+      </View>
+      
+      <View style={styles.requirementsContainer}>
+        {item.requirements && item.requirements.map((req, index) => (
+          <View key={index} style={styles.requirement}>
+            <Text style={styles.requirementText}>{req}</Text>
           </View>
         ))}
       </View>
       
       <TouchableOpacity
-        style={styles.applyButton}
+        style={[
+          styles.applyButton,
+          item.status !== 'active' && styles.applyButtonDisabled
+        ]}
         onPress={() => navigation.navigate('ProjectDetail', { id: item.id })}
+        disabled={item.status !== 'active'}
       >
-        <Text style={styles.applyButtonText}>Başvur</Text>
+        <Text style={styles.applyButtonText}>
+          {item.status === 'active' ? 'Başvur' : 'Başvuru Kapalı'}
+        </Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -235,16 +272,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     flex: 1,
   },
-  projectProgress: {
-    backgroundColor: '#3b82f6',
+  projectStatus: {
+    fontSize: 12,
     color: '#fff',
-    fontWeight: 'bold',
+    backgroundColor: '#10b981',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 10,
-    fontSize: 12,
+    borderRadius: 4,
+    textTransform: 'capitalize',
   },
-  projectAcademic: {
+  mentorInfo: {
+    fontSize: 14,
     color: '#666',
     marginBottom: 8,
   },
@@ -252,22 +290,35 @@ const styles = StyleSheet.create({
     color: '#444',
     marginBottom: 10,
   },
-  tagsContainer: {
+  projectDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  detailText: {
+    fontSize: 12,
+    color: '#666',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  requirementsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 10,
+    marginTop: 8,
+    marginBottom: 12,
   },
-  tag: {
-    backgroundColor: '#e0f2fe',
-    borderRadius: 15,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginRight: 5,
-    marginBottom: 5,
+  requirement: {
+    backgroundColor: '#e5e7eb',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginRight: 6,
+    marginBottom: 6,
   },
-  tagText: {
-    color: '#3b82f6',
+  requirementText: {
     fontSize: 12,
+    color: '#374151',
   },
   applyButton: {
     backgroundColor: '#3b82f6',
@@ -292,6 +343,9 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#666',
     textAlign: 'center',
+  },
+  applyButtonDisabled: {
+    backgroundColor: '#d1d5db',
   },
 });
 

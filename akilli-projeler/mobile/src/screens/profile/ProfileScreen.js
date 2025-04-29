@@ -153,7 +153,9 @@ const ProfileScreen = ({ navigation }) => {
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{profile.name.charAt(0)}</Text>
+              <Text style={styles.avatarText}>
+                {profile?.name ? profile.name.charAt(0) : '?'}
+              </Text>
             </View>
             <TouchableOpacity style={styles.editAvatarButton}>
               <Text style={styles.editAvatarText}>Değiştir</Text>

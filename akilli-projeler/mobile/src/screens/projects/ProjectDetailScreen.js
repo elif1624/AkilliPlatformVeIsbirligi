@@ -19,95 +19,60 @@ const ProjectDetailScreen = ({ route, navigation }) => {
   const fetchProjectDetails = async () => {
     try {
       setLoading(true);
-      // API'den proje detaylarını getir
       const response = await apiService.projects.getById(id);
       
-      // API'den veri gelmezse örnek veri kullan
       if (!response.data) {
         // Örnek proje verisi
         const dummyProject = {
           id: id,
           title: 'Yapay Zeka ile Doğal Dil İşleme',
           description: 'Türkçe metinler için doğal dil işleme ve konu sınıflandırması yapan bir NLP projesi. REST tabanlı modeller geliştireceğiz.',
-          requirements: 'Python, NLP ve derin öğrenme konularında temel bilgi sahibi olunması gerekmektedir.',
-          academic: 'Prof. Dr. Ayşe Yılmaz',
-          academicTitle: 'Yapay Zeka Mühendisliği',
-          tags: ['AI', 'NLP', 'Deep Learning'],
-          deadline: '2024-09-01',
-          startDate: '2024-04-01',
-          size: '6 ay',
-          location: 'Kampüs',
+          requirements: ['Python', 'NLP', 'Deep Learning', 'REST API'],
+          max_students: 3,
+          start_date: '2024-04-01',
+          end_date: '2024-09-01',
           status: 'active',
-          applications: 12,
-          views: 245,
-          favorites: 34,
-          milestones: [
-            {
-              title: 'Proje Başvuruları Açıldı',
-              date: '2024-02-15',
-              completed: true,
-            },
-            {
-              title: 'Veri Seti Hazırlanacak',
-              date: '2024-04-15',
-              completed: false,
-            },
-            {
-              title: 'Proje Planı Oluşturuldu',
-              date: '2024-03-01',
-              completed: true,
-            },
-          ],
-          team: [
+          mentor: {
+            id: 1,
+            title: 'Prof. Dr.',
+            name: 'Ayşe',
+            surname: 'Yılmaz',
+            department: 'Computer Engineering',
+            expertise_areas: ['AI', 'NLP', 'Machine Learning'],
+            office_location: 'A-101'
+          },
+          applications: [
             {
               id: 1,
-              name: 'Mehmet Kaya',
-              role: 'ML Engineer',
-              avatar: null,
-              online: true,
-            },
-            {
-              id: 2,
-              name: 'Zeynep Demir',
-              role: 'Data Scientist',
-              avatar: null,
-              online: false,
-            },
-            {
-              id: 3,
-              name: 'Can Yılmaz',
-              role: 'Backend Developer',
-              avatar: null,
-              online: true,
-            },
-          ],
+              student_id: '123',
+              status: 'pending',
+              motivation_letter: 'Bu projede yer almak istiyorum...',
+              created_at: '2024-03-15'
+            }
+          ]
         };
         setProject(dummyProject);
         
-        // Kullanıcının bu projeye başvurup başvurmadığını kontrol et (örnek)
-        setHasApplied(Math.random() > 0.5);
+        // Kullanıcının başvurusunu kontrol et
+        if (user) {
+          const hasExistingApplication = dummyProject.applications.some(
+            app => app.student_id === user.id
+          );
+          setHasApplied(hasExistingApplication);
+        }
       } else {
         setProject(response.data);
         
-        // Kullanıcının bu projeye başvurup başvurmadığını kontrol et
-        // Bu kısım gerçek API'ye göre düzenlenmelidir
         if (user) {
-          try {
-            // Burada kullanıcının başvurularını getiren bir API endpoint'i olmalı
-            // const applicationsResponse = await apiService.applications.getUserApplications(user.id);
-            // const hasApplied = applicationsResponse.data.some(app => app.project_id === id);
-            // setHasApplied(hasApplied);
-            
-            // Şimdilik rastgele bir değer atıyoruz
-            setHasApplied(Math.random() > 0.5);
-          } catch (error) {
-            console.error('Başvuru durumu kontrol edilirken hata oluştu:', error);
-          }
+          const hasExistingApplication = response.data.applications.some(
+            app => app.student_id === user.id
+          );
+          setHasApplied(hasExistingApplication);
         }
       }
     } catch (error) {
-      console.error('Proje detayları alınırken hata oluştu:', error);
-      Alert.alert('Hata', 'Proje detayları alınırken bir hata oluştu.');
+      console.error('Error fetching project details:', error);
+      Alert.alert('Error', 'Failed to fetch project details');
     } finally {
       setLoading(false);
     }
@@ -116,11 +81,11 @@ const ProjectDetailScreen = ({ route, navigation }) => {
   const handleApply = async () => {
     if (!user) {
       Alert.alert(
-        'Giriş Yapın',
-        'Projeye başvurmak için giriş yapmanız gerekmektedir.',
+        'Login Required',
+        'You need to login to apply for this project',
         [
-          { text: 'İptal', style: 'cancel' },
-          { text: 'Giriş Yap', onPress: () => navigation.navigate('Login') },
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Login', onPress: () => navigation.navigate('Login') }
         ]
       );
       return;
@@ -129,17 +94,16 @@ const ProjectDetailScreen = ({ route, navigation }) => {
     try {
       setApplying(true);
       
-      // API'ye başvuru gönder
       await apiService.projects.apply(id, {
-        user_id: user.id,
-        message: 'Bu projeye katılmak istiyorum.',
+        student_id: user.id,
+        motivation_letter: 'I would like to join this project...' // Bu kısmı bir form ile alabiliriz
       });
       
       setHasApplied(true);
-      Alert.alert('Başarılı', 'Başvurunuz başarıyla gönderildi.');
+      Alert.alert('Success', 'Your application has been submitted successfully');
     } catch (error) {
-      console.error('Başvuru yapılırken hata oluştu:', error);
-      Alert.alert('Hata', 'Başvuru yapılırken bir hata oluştu.');
+      console.error('Error applying to project:', error);
+      Alert.alert('Error', 'Failed to submit application');
     } finally {
       setApplying(false);
     }
@@ -192,135 +156,99 @@ const ProjectDetailScreen = ({ route, navigation }) => {
       <ScrollView style={styles.content}>
         <View style={styles.projectHeader}>
           <Text style={styles.projectTitle}>{project.title}</Text>
-          <View style={styles.tagsContainer}>
-            {project.tags && project.tags.map((tag, index) => (
-              <View key={index} style={styles.tag}>
-                <Text style={styles.tagText}>{tag}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.academicInfo}>
-          <View style={styles.academicAvatar}>
-            <Text style={styles.academicAvatarText}>
-              {project.academic ? project.academic.charAt(0) : 'A'}
+          <View style={styles.statusContainer}>
+            <Text style={[styles.statusText, styles[`status_${project.status}`]]}>
+              {project.status}
             </Text>
           </View>
-          <View style={styles.academicDetails}>
-            <Text style={styles.academicName}>{project.academic}</Text>
-            <Text style={styles.academicTitle}>{project.academicTitle || 'Akademisyen'}</Text>
-          </View>
+        </View>
+
+        <View style={styles.mentorInfo}>
+          <Text style={styles.mentorTitle}>Project Mentor</Text>
+          <Text style={styles.mentorName}>
+            {project.mentor?.title} {project.mentor?.name} {project.mentor?.surname}
+          </Text>
+          <Text style={styles.mentorDepartment}>{project.mentor?.department}</Text>
+          <Text style={styles.mentorLocation}>Office: {project.mentor?.office_location}</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Genel</Text>
-          <View style={styles.infoRow}>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Başvuru Tarihi</Text>
-              <Text style={styles.infoValue}>{project.startDate || '2024-04-01'}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Bitiş</Text>
-              <Text style={styles.infoValue}>{project.deadline || '2024-09-01'}</Text>
-            </View>
-          </View>
-          <View style={styles.infoRow}>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Süre</Text>
-              <Text style={styles.infoValue}>{project.size || '6 ay'}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Konum</Text>
-              <Text style={styles.infoValue}>{project.location || 'Kampüs'}</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Açıklama</Text>
+          <Text style={styles.sectionTitle}>Description</Text>
           <Text style={styles.description}>{project.description}</Text>
         </View>
 
-        {project.requirements && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Gereksinimler</Text>
-            <Text style={styles.description}>{project.requirements}</Text>
-          </View>
-        )}
-
-        {project.team && project.team.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Ekip Üyeleri</Text>
-            {project.team.map((member, index) => (
-              <View key={index} style={styles.teamMember}>
-                <View style={styles.memberAvatar}>
-                  <Text style={styles.memberAvatarText}>{member.name.charAt(0)}</Text>
-                  {member.online && <View style={styles.onlineIndicator} />}
-                </View>
-                <View style={styles.memberDetails}>
-                  <Text style={styles.memberName}>{member.name}</Text>
-                  <Text style={styles.memberRole}>{member.role}</Text>
-                </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Requirements</Text>
+          <View style={styles.requirementsContainer}>
+            {project.requirements?.map((req, index) => (
+              <View key={index} style={styles.requirement}>
+                <Text style={styles.requirementText}>{req}</Text>
               </View>
             ))}
-          </View>
-        )}
-
-        {project.milestones && project.milestones.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Proje Aşamaları</Text>
-            {project.milestones.map((milestone, index) => (
-              <View key={index} style={styles.milestone}>
-                <View style={[styles.milestoneStatus, milestone.completed && styles.milestoneCompleted]} />
-                <View style={styles.milestoneDetails}>
-                  <Text style={styles.milestoneTitle}>{milestone.title}</Text>
-                  <Text style={styles.milestoneDate}>{milestone.date}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        <View style={styles.statsSection}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{project.views || 245}</Text>
-            <Text style={styles.statLabel}>Görüntülenme</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{project.applications || 12}</Text>
-            <Text style={styles.statLabel}>Başvuru</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{project.favorites || 34}</Text>
-            <Text style={styles.statLabel}>Favori</Text>
           </View>
         </View>
 
-        <View style={styles.actionContainer}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Project Details</Text>
+          <View style={styles.detailsGrid}>
+            <View style={styles.detailItem}>
+              <Ionicons name="people-outline" size={20} color="#666" />
+              <Text style={styles.detailLabel}>Max Students</Text>
+              <Text style={styles.detailValue}>{project.max_students}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Ionicons name="calendar-outline" size={20} color="#666" />
+              <Text style={styles.detailLabel}>Start Date</Text>
+              <Text style={styles.detailValue}>
+                {new Date(project.start_date).toLocaleDateString('tr-TR')}
+              </Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Ionicons name="time-outline" size={20} color="#666" />
+              <Text style={styles.detailLabel}>End Date</Text>
+              <Text style={styles.detailValue}>
+                {new Date(project.end_date).toLocaleDateString('tr-TR')}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {project.mentor?.expertise_areas && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Mentor Expertise</Text>
+            <View style={styles.expertiseContainer}>
+              {project.mentor.expertise_areas.map((area, index) => (
+                <View key={index} style={styles.expertiseItem}>
+                  <Text style={styles.expertiseText}>{area}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+      </ScrollView>
+
+      <View style={styles.footer}>
+        {applying ? (
+          <ActivityIndicator size="small" color="#3b82f6" />
+        ) : (
           <TouchableOpacity
             style={[
-              styles.messageButton,
-              { flex: hasApplied ? 1 : 0.3 },
+              styles.applyButton,
+              (hasApplied || project.status !== 'active') && styles.applyButtonDisabled
             ]}
-            onPress={() => Alert.alert('Bilgi', 'Mesaj gönderme özelliği yakında eklenecek.')}
+            onPress={handleApply}
+            disabled={hasApplied || project.status !== 'active'}
           >
-            <Text style={styles.messageButtonText}>Mesaj Gönder</Text>
+            <Text style={styles.applyButtonText}>
+              {hasApplied
+                ? 'Already Applied'
+                : project.status !== 'active'
+                  ? 'Applications Closed'
+                  : 'Apply Now'}
+            </Text>
           </TouchableOpacity>
-
-          {!hasApplied && (
-            <TouchableOpacity
-              style={[styles.applyButton, applying && styles.applyingButton]}
-              onPress={handleApply}
-              disabled={applying}
-            >
-              <Text style={styles.applyButtonText}>
-                {applying ? 'Başvuruluyor...' : 'Başvur'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </ScrollView>
+        )}
+      </View>
     </View>
   );
 };
@@ -356,213 +284,143 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 10,
   },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  statusContainer: {
+    marginTop: 8,
   },
-  tag: {
-    backgroundColor: '#e0f2fe',
-    borderRadius: 15,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginRight: 5,
-    marginBottom: 5,
+  statusText: {
+    fontSize: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    overflow: 'hidden',
+    textTransform: 'capitalize',
   },
-  tagText: {
-    color: '#3b82f6',
-    fontSize: 12,
+  status_active: {
+    backgroundColor: '#10b981',
+    color: '#fff',
   },
-  academicInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
+  status_draft: {
+    backgroundColor: '#6b7280',
+    color: '#fff',
+  },
+  status_completed: {
+    backgroundColor: '#3b82f6',
+    color: '#fff',
+  },
+  status_cancelled: {
+    backgroundColor: '#ef4444',
+    color: '#fff',
+  },
+  mentorInfo: {
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    padding: 16,
+    marginBottom: 16,
+    borderRadius: 8,
     elevation: 2,
   },
-  academicAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#3b82f6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  academicAvatarText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  academicDetails: {
-    flex: 1,
-  },
-  academicName: {
+  mentorTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 5,
+    color: '#374151',
+    marginBottom: 8,
   },
-  academicTitle: {
-    color: '#666',
+  mentorName: {
+    fontSize: 18,
+    color: '#111827',
+    marginBottom: 4,
+  },
+  mentorDepartment: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  mentorLocation: {
+    fontSize: 14,
+    color: '#6b7280',
   },
   section: {
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    padding: 16,
+    marginBottom: 16,
+    borderRadius: 8,
     elevation: 2,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  infoItem: {
-    flex: 1,
-  },
-  infoLabel: {
-    color: '#666',
-    fontSize: 12,
-    marginBottom: 5,
-  },
-  infoValue: {
-    fontWeight: 'bold',
+    color: '#374151',
+    marginBottom: 12,
   },
   description: {
     lineHeight: 20,
     color: '#444',
   },
-  teamMember: {
+  requirementsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
+    flexWrap: 'wrap',
   },
-  memberAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#e0f2fe',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  memberAvatarText: {
-    color: '#3b82f6',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  onlineIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#10b981',
-    borderWidth: 1,
-    borderColor: '#fff',
-  },
-  memberDetails: {
-    flex: 1,
-  },
-  memberName: {
-    fontWeight: 'bold',
-    marginBottom: 2,
-  },
-  memberRole: {
-    color: '#666',
-    fontSize: 12,
-  },
-  milestone: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  milestoneStatus: {
-    width: 12,
-    height: 12,
+  requirement: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#e0e0e0',
-    marginRight: 10,
+    marginRight: 8,
+    marginBottom: 8,
   },
-  milestoneCompleted: {
-    backgroundColor: '#10b981',
+  requirementText: {
+    fontSize: 14,
+    color: '#374151',
   },
-  milestoneDetails: {
-    flex: 1,
-  },
-  milestoneTitle: {
-    fontWeight: 'bold',
-    marginBottom: 2,
-  },
-  milestoneDate: {
-    color: '#666',
-    fontSize: 12,
-  },
-  statsSection: {
+  detailsGrid: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
   },
-  statItem: {
-    flex: 1,
+  detailItem: {
     alignItems: 'center',
+    minWidth: '30%',
   },
-  statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  statLabel: {
-    color: '#666',
+  detailLabel: {
     fontSize: 12,
+    color: '#6b7280',
+    marginTop: 4,
   },
-  actionContainer: {
+  detailValue: {
+    fontSize: 14,
+    color: '#111827',
+    marginTop: 2,
+  },
+  expertiseContainer: {
     flexDirection: 'row',
-    marginBottom: 30,
+    flexWrap: 'wrap',
   },
-  messageButton: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#3b82f6',
-    borderRadius: 5,
+  expertiseItem: {
+    backgroundColor: '#e0f2fe',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  expertiseText: {
+    fontSize: 14,
+    color: '#0369a1',
+  },
+  footer: {
     padding: 15,
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  messageButtonText: {
-    color: '#3b82f6',
-    fontWeight: 'bold',
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
   },
   applyButton: {
-    flex: 0.7,
+    flex: 1,
     backgroundColor: '#3b82f6',
     borderRadius: 5,
     padding: 15,
     alignItems: 'center',
   },
-  applyingButton: {
-    backgroundColor: '#93c5fd',
+  applyButtonDisabled: {
+    backgroundColor: '#d1d5db',
   },
   applyButtonText: {
     color: '#fff',

@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState('');
+  const [surname, setSurname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -15,7 +16,7 @@ const RegisterScreen = ({ navigation }) => {
   const { register } = useAuth();
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !surname || !email || !password || !confirmPassword) {
       setError('Lütfen tüm alanları doldurun.');
       return;
     }
@@ -29,14 +30,10 @@ const RegisterScreen = ({ navigation }) => {
       setLoading(true);
       setError('');
       
-      const userData = {
-        name,
-        role,
-        interests: [],
-      };
-      
-      await register(email, password, userData);
-      // Başarılı kayıt durumunda navigasyon AppNavigator tarafından otomatik olarak yönlendirilecek
+      const result = await register(email, password, name, surname, role);
+      if (!result.success) {
+        setError(result.error || 'Kayıt olunurken bir hata oluştu.');
+      }
     } catch (error) {
       setError('Kayıt olunurken bir hata oluştu. Lütfen bilgilerinizi kontrol edin.');
       console.error(error);
@@ -66,12 +63,22 @@ const RegisterScreen = ({ navigation }) => {
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Ad Soyad</Text>
+            <Text style={styles.label}>Ad</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ad Soyad"
+              placeholder="Adınız"
               value={name}
               onChangeText={setName}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Soyad</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Soyadınız"
+              value={surname}
+              onChangeText={setSurname}
             />
           </View>
 

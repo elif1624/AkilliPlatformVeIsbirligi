@@ -17,45 +17,28 @@ export const AuthProvider = ({ children }) => {
     checkUser();
     
     // Supabase auth değişikliklerini dinle
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN') {
-          setUser(session.user);
-          await AsyncStorage.setItem('token', session.access_token);
-          await AsyncStorage.setItem('user', JSON.stringify(session.user));
-        }
-        if (event === 'SIGNED_OUT') {
-          setUser(null);
-          await AsyncStorage.removeItem('token');
-          await AsyncStorage.removeItem('user');
-        }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+      } else {
+        setUser(null);
       }
-    );
+      setLoading(false);
+    });
 
     return () => {
-      authListener?.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
 
   // Kullanıcı durumunu kontrol et
   const checkUser = async () => {
     try {
-      setLoading(true);
-      
-      // Önce AsyncStorage'dan kontrol et
-      const currentUser = await apiService.auth.getCurrentUser();
-      if (currentUser) {
-        setUser(currentUser);
-      } else {
-        // Supabase'den kontrol et
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setUser(user);
-          await AsyncStorage.setItem('user', JSON.stringify(user));
-        }
-      }
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      setUser(session?.user || null);
     } catch (error) {
-      console.error('Kullanıcı durumu kontrol edilirken hata oluştu:', error);
+      console.error('Error checking user session:', error.message);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -68,55 +51,69 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data: { session }, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) throw error;
       
-      setUser(data.user);
-      await AsyncStorage.setItem('token', data.session.access_token);
-      await AsyncStorage.setItem('user', JSON.stringify(data.user));
+      setUser(session?.user);
+      await AsyncStorage.setItem('userSession', JSON.stringify(session));
       
-      return data;
+      return { success: true };
     } catch (error) {
-      console.error('Giriş yapılırken hata oluştu:', error);
+      console.error('Login error:', error.message);
       setError(error.message);
-      throw error;
+      return { success: false, error: error.message };
     } finally {
       setLoading(false);
     }
   };
 
   // Kayıt ol
-  const register = async (email, password, userData) => {
+  const register = async (email, password, name, surname, role) => {
     try {
       setLoading(true);
       setError(null);
       
-      // Supabase ile kayıt ol
-      const { data, error } = await supabase.auth.signUp({
+      // Register the user with Supabase Auth
+      const { data: { session, user: newUser }, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       });
       
-      if (error) throw error;
-      
-      // Kullanıcı bilgilerini API'ye kaydet
-      if (data.user) {
-        await apiService.users.create({
-          ...userData,
-          email: data.user.email,
-          auth_id: data.user.id,
-        });
+      if (signUpError) throw signUpError;
+
+      // Create the user profile in the public.users table
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: newUser.id,
+            email,
+            name,
+            surname,
+            role,
+          }
+        ]);
+
+      if (profileError) {
+        // If profile creation fails, we should delete the auth user
+        await supabase.auth.admin.deleteUser(newUser.id);
+        throw profileError;
+      }
+
+      setUser(newUser);
+      if (session) {
+        await AsyncStorage.setItem('userSession', JSON.stringify(session));
       }
       
-      return data;
+      return { success: true };
     } catch (error) {
-      console.error('Kayıt olunurken hata oluştu:', error);
+      console.error('Registration error:', error.message);
       setError(error.message);
-      throw error;
+      return { success: false, error: error.message };
     } finally {
       setLoading(false);
     }
@@ -132,9 +129,10 @@ export const AuthProvider = ({ children }) => {
       if (error) throw error;
       
       await apiService.auth.logout();
+      await AsyncStorage.removeItem('userSession');
       setUser(null);
     } catch (error) {
-      console.error('Çıkış yapılırken hata oluştu:', error);
+      console.error('Logout error:', error.message);
       setError(error.message);
     } finally {
       setLoading(false);

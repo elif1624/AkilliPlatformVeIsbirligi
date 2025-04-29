@@ -17,6 +17,7 @@ import ProjectDetailScreen from '../screens/projects/ProjectDetailScreen';
 import MentorsScreen from '../screens/mentors/MentorsScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import ApplicationsScreen from '../screens/applications/ApplicationsScreen';
+import MentorDetailScreen from '../screens/mentors/MentorDetailScreen';
 
 // Stack ve Tab Navigator'ları oluştur
 const Stack = createStackNavigator();
@@ -33,9 +34,17 @@ const AuthNavigator = () => (
 // Projeler Stack Navigator
 const ProjectsNavigator = () => (
   <Stack.Navigator>
-    <Stack.Screen name="ProjectsList" component={ProjectsScreen} options={{ title: 'Projeler' }} />
-    <Stack.Screen name="ProjectDetail" component={ProjectDetailScreen} options={{ title: 'Proje Detayı' }} />
+    <Stack.Screen name="ProjectsList" component={ProjectsScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="ProjectDetail" component={ProjectDetailScreen} options={{ headerShown: false }} />
     <Stack.Screen name="Applications" component={ApplicationsScreen} options={{ title: 'Başvurular' }} />
+  </Stack.Navigator>
+);
+
+// Mentors Stack Navigator
+const MentorsNavigator = () => (
+  <Stack.Navigator>
+    <Stack.Screen name="MentorsList" component={MentorsScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="MentorDetail" component={MentorDetailScreen} options={{ headerShown: false }} />
   </Stack.Navigator>
 );
 
@@ -65,7 +74,7 @@ const MainTabNavigator = () => (
   >
     <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Ana Sayfa' }} />
     <Tab.Screen name="Projects" component={ProjectsNavigator} options={{ title: 'Projeler' }} />
-    <Tab.Screen name="Mentors" component={MentorsScreen} options={{ title: 'Mentorlar' }} />
+    <Tab.Screen name="Mentors" component={MentorsNavigator} options={{ title: 'Mentorlar' }} />
     <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profil' }} />
   </Tab.Navigator>
 );

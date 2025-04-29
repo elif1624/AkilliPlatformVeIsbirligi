@@ -49,6 +49,40 @@ const HomeScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Veri alınırken hata oluştu:', error);
+      
+      // Daha detaylı hata mesajı
+      let errorMessage = 'Veri alınırken hata oluştu';
+      
+      if (error.response) {
+        // Sunucu cevap döndü ama hata kodu ile
+        errorMessage += `: ${error.response.status} ${error.response.statusText}`;
+        console.error('Sunucu cevabı:', error.response.data);
+      } else if (error.request) {
+        // İstek yapıldı ama cevap alınamadı
+        errorMessage += ': Sunucudan cevap alınamadı';
+        console.error('İstek:', error.request);
+      } else {
+        // İstek oluşturulurken bir hata oluştu
+        errorMessage += `: ${error.message}`;
+      }
+      
+      // Örnek veri kullanarak UI'ın çalışmasını sağla
+      setProjects([
+        {
+          id: 1,
+          title: 'E-Ticaret Platformu Geliştirme (Örnek)',
+          description: 'Bu bir örnek projedir. Gerçek veriler yüklenemedi.',
+          user: { name: 'Dr. Ayşe Yılmaz' },
+          tags: ['Web', 'E-Ticaret']
+        },
+        {
+          id: 2,
+          title: 'Yapay Zeka Destekli Mobil Uygulama (Örnek)',
+          description: 'Bu bir örnek projedir. Gerçek veriler yüklenemedi.',
+          user: { name: 'Prof. Dr. Mehmet Kaya' },
+          tags: ['Mobil', 'Yapay Zeka']
+        }
+      ]);
     } finally {
       setLoading(false);
       setRefreshing(false);

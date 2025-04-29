@@ -15,8 +15,19 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const app = express();
 
 // Middleware'leri yapılandır
-app.use(cors());
+app.use(cors({
+  origin: '*', // Tüm kaynaklardan gelen isteklere izin ver
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'apikey']
+}));
 app.use(express.json());
+
+// Supabase API anahtarını kontrol et
+app.use((req, res, next) => {
+  // Supabase API anahtarını istek başlıklarına ekle
+  req.supabaseKey = supabaseKey;
+  next();
+});
 
 // Ana rota
 app.get('/', (req, res) => {
