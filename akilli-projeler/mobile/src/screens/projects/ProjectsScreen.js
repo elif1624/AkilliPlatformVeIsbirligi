@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import apiService from '../../services/api';
+import supabase from '../../services/supabase';
 
 const ProjectsScreen = ({ navigation }) => {
   const [projects, setProjects] = useState([]);
@@ -12,6 +13,10 @@ const ProjectsScreen = ({ navigation }) => {
 
   useEffect(() => {
     fetchProjects();
+    // const interval = setInterval(() => {
+    //   fetchProjects();
+    // }, 5000); // 5 saniyede bir yenile
+    // return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -31,80 +36,16 @@ const ProjectsScreen = ({ navigation }) => {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const response = await apiService.projects.getAll();
-      
-      // API'den veri gelmezse örnek veri kullan
-      if (!response.data || response.data.length === 0) {
-        const dummyProjects = [
-          {
-            id: 1,
-            title: 'E-Ticaret Platformu Geliştirme',
-            description: 'Küçük işletmeler için özelleştirilmiş e-ticaret platformu geliştirme projesi.',
-            requirements: ['React', 'Node.js', 'PostgreSQL'],
-            max_students: 3,
-            start_date: '2024-04-01',
-            end_date: '2024-09-01',
-            status: 'active',
-            mentor: {
-              id: 1,
-              title: 'Dr.',
-              name: 'Ayşe',
-              surname: 'Yılmaz',
-              department: 'Computer Engineering',
-              expertise_areas: ['Web Development', 'Database Systems']
-            }
-          },
-          {
-            id: 2,
-            title: 'Yapay Zeka Destekli Mobil Uygulama',
-            description: 'Doğal dil işleme teknikleri kullanarak kullanıcı davranışlarını analiz eden mobil uygulama.',
-            requirements: ['Python', 'TensorFlow', 'React Native'],
-            max_students: 2,
-            start_date: '2024-05-01',
-            end_date: '2024-10-01',
-            status: 'active',
-            mentor: {
-              id: 2,
-              title: 'Prof. Dr.',
-              name: 'Mehmet',
-              surname: 'Kaya',
-              department: 'Computer Engineering',
-              expertise_areas: ['AI', 'Machine Learning']
-            }
-          },
-          {
-            id: 3,
-            title: 'Blockchain Tabanlı Kimlik Doğrulama',
-            description: 'Merkezi olmayan kimlik doğrulama sistemi geliştirme projesi.',
-            academic: 'Doç. Dr. Zeynep Demir',
-            tags: ['Blockchain', 'Security'],
-            progress: 28,
-          },
-          {
-            id: 4,
-            title: 'Derin Öğrenme ile Görüntü Sınıflandırma',
-            description: 'Tıbbi görüntüleri sınıflandırmak için derin öğrenme modelleri geliştirme.',
-            academic: 'Prof. Dr. Ali Yılmaz',
-            tags: ['Deep Learning', 'Computer Vision', 'Healthcare'],
-            progress: 75,
-          },
-          {
-            id: 5,
-            title: 'IoT Tabanlı Akıllı Ev Sistemleri',
-            description: 'Enerji verimliliğini artırmak için IoT cihazları kullanan akıllı ev sistemleri geliştirme.',
-            academic: 'Dr. Selin Kaya',
-            tags: ['IoT', 'Embedded Systems'],
-            progress: 55,
-          },
-        ];
-        setProjects(dummyProjects);
-        setFilteredProjects(dummyProjects);
-      } else {
-        setProjects(response.data);
-        setFilteredProjects(response.data);
-      }
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*');
+      if (error) throw error;
+      setProjects(data || []);
+      setFilteredProjects(data || []);
     } catch (error) {
       console.error('Projeler alınırken hata oluştu:', error);
+      setProjects([]);
+      setFilteredProjects([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -119,7 +60,10 @@ const ProjectsScreen = ({ navigation }) => {
   const renderProjectItem = ({ item }) => (
     <TouchableOpacity
       style={styles.projectCard}
-      onPress={() => navigation.navigate('ProjectDetail', { id: item.id })}
+      onPress={() => navigation.navigate('Projects', {
+        screen: 'ProjectDetail',
+        params: { id: item.id }
+      })}
     >
       <View style={styles.projectHeader}>
         <Text style={styles.projectTitle}>{item.title}</Text>
@@ -156,7 +100,10 @@ const ProjectsScreen = ({ navigation }) => {
           styles.applyButton,
           item.status !== 'active' && styles.applyButtonDisabled
         ]}
-        onPress={() => navigation.navigate('ProjectDetail', { id: item.id })}
+        onPress={() => navigation.navigate('Projects', {
+          screen: 'ProjectDetail',
+          params: { id: item.id }
+        })}
         disabled={item.status !== 'active'}
       >
         <Text style={styles.applyButtonText}>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import apiService from '../../services/api';
+import supabase from '../../services/supabase';
 
 const ApplicationsScreen = ({ route, navigation }) => {
   const { id: projectId } = route.params;
@@ -12,85 +13,24 @@ const ApplicationsScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     fetchData();
+    // const interval = setInterval(() => {
+    //   fetchData();
+    // }, 5000); // 5 saniyede bir yenile
+    // return () => clearInterval(interval);
   }, [projectId]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      
-      // Proje bilgilerini getir
-      const projectResponse = await apiService.projects.getById(projectId);
-      
-      // Projeye ait başvuruları getir
-      const applicationsResponse = await apiService.projects.getApplications(projectId);
-      
-      // API'den veri gelmezse örnek veri kullan
-      if (!projectResponse.data) {
-        setProject({
-          id: projectId,
-          title: 'Yapay Zeka ile Doğal Dil İşleme',
-          description: 'Türkçe metinler için doğal dil işleme ve konu sınıflandırması yapan bir NLP projesi.',
-          academic: 'Prof. Dr. Ayşe Yılmaz',
-        });
-      } else {
-        setProject(projectResponse.data);
-      }
-      
-      if (!applicationsResponse.data || applicationsResponse.data.length === 0) {
-        const dummyApplications = [
-          {
-            id: 1,
-            user: {
-              id: 1,
-              name: 'Mehmet Kaya',
-              university: 'Fırat Üniversitesi',
-              department: 'Bilgisayar Mühendisliği',
-              year: 3,
-              avatar: null,
-            },
-            message: 'Bu projede yer almak istiyorum. NLP konusunda deneyimim var ve bu alanda kendimi geliştirmek istiyorum.',
-            status: 'pending',
-            createdAt: '2024-04-15',
-            skills: ['Python', 'NLP', 'Machine Learning'],
-          },
-          {
-            id: 2,
-            user: {
-              id: 2,
-              name: 'Zeynep Demir',
-              university: 'Fırat Üniversitesi',
-              department: 'Yazılım Mühendisliği',
-              year: 4,
-              avatar: null,
-            },
-            message: 'Daha önce benzer bir projede çalıştım ve bu projede de yer almak istiyorum.',
-            status: 'accepted',
-            createdAt: '2024-04-10',
-            skills: ['Python', 'Deep Learning', 'TensorFlow'],
-          },
-          {
-            id: 3,
-            user: {
-              id: 3,
-              name: 'Can Yılmaz',
-              university: 'Fırat Üniversitesi',
-              department: 'Bilgisayar Mühendisliği',
-              year: 2,
-              avatar: null,
-            },
-            message: 'Bu projede yer alarak NLP alanında kendimi geliştirmek istiyorum.',
-            status: 'rejected',
-            createdAt: '2024-04-05',
-            skills: ['Python', 'Java', 'Web Development'],
-          },
-        ];
-        setApplications(dummyApplications);
-      } else {
-        setApplications(applicationsResponse.data);
-      }
+      const { data, error } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('project_id', projectId);
+      if (error) throw error;
+      setApplications(data || []);
     } catch (error) {
       console.error('Başvurular alınırken hata oluştu:', error);
-      Alert.alert('Hata', 'Başvurular alınırken bir hata oluştu.');
+      setApplications([]);
     } finally {
       setLoading(false);
       setRefreshing(false);

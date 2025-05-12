@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, RefreshControl } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import apiService from '../../services/api';
+import supabase from '../../services/supabase';
 
 const HomeScreen = ({ navigation }) => {
   const { user } = useAuth();
@@ -12,77 +13,32 @@ const HomeScreen = ({ navigation }) => {
 
   useEffect(() => {
     fetchData();
+    // const interval = setInterval(() => {
+    //   fetchData();
+    // }, 5000); // 5 saniyede bir yenile
+    // return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      
-      // Önerilen projeleri getir
-      const projectsResponse = await apiService.projects.getAll();
-      setProjects(projectsResponse.data.slice(0, 5)); // İlk 5 projeyi göster
-      
-      // Kullanıcının başvurularını getir
-      if (user) {
-        // Burada kullanıcının başvurularını getiren bir API endpoint'i olmalı
-        // Şimdilik örnek veri kullanıyoruz
-        setApplications([
-          {
-            id: 1,
-            project: {
-              id: 1,
-              title: 'E-Ticaret Platformu Geliştirme',
-              academic: 'Dr. Ayşe Yılmaz',
-              progress: 45,
-            },
-          },
-          {
-            id: 2,
-            project: {
-              id: 2,
-              title: 'Yapay Zeka Destekli Mobil Uygulama',
-              academic: 'Prof. Dr. Mehmet Kaya',
-              progress: 62,
-            },
-          },
-        ]);
-      }
+      // Projeleri çek
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select('*');
+      if (projectsError) throw projectsError;
+      setProjects(projectsData || []);
+      // Başvuruları çek
+      const { data: applicationsData, error: applicationsError } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('student_id', user?.id);
+      if (applicationsError) throw applicationsError;
+      setApplications(applicationsData || []);
     } catch (error) {
-      console.error('Veri alınırken hata oluştu:', error);
-      
-      // Daha detaylı hata mesajı
-      let errorMessage = 'Veri alınırken hata oluştu';
-      
-      if (error.response) {
-        // Sunucu cevap döndü ama hata kodu ile
-        errorMessage += `: ${error.response.status} ${error.response.statusText}`;
-        console.error('Sunucu cevabı:', error.response.data);
-      } else if (error.request) {
-        // İstek yapıldı ama cevap alınamadı
-        errorMessage += ': Sunucudan cevap alınamadı';
-        console.error('İstek:', error.request);
-      } else {
-        // İstek oluşturulurken bir hata oluştu
-        errorMessage += `: ${error.message}`;
-      }
-      
-      // Örnek veri kullanarak UI'ın çalışmasını sağla
-      setProjects([
-        {
-          id: 1,
-          title: 'E-Ticaret Platformu Geliştirme (Örnek)',
-          description: 'Bu bir örnek projedir. Gerçek veriler yüklenemedi.',
-          user: { name: 'Dr. Ayşe Yılmaz' },
-          tags: ['Web', 'E-Ticaret']
-        },
-        {
-          id: 2,
-          title: 'Yapay Zeka Destekli Mobil Uygulama (Örnek)',
-          description: 'Bu bir örnek projedir. Gerçek veriler yüklenemedi.',
-          user: { name: 'Prof. Dr. Mehmet Kaya' },
-          tags: ['Mobil', 'Yapay Zeka']
-        }
-      ]);
+      console.error('Veriler alınırken hata oluştu:', error);
+      setProjects([]);
+      setApplications([]);
     } finally {
       setLoading(false);
       setRefreshing(false);

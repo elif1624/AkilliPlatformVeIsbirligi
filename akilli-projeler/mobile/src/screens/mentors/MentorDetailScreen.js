@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,15 +6,15 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { api } from '../../services/api';
+import apiService from '../../services/api';
 
 const MentorDetailScreen = ({ route, navigation }) => {
+  const { id } = route.params;
   const [mentor, setMentor] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { id } = route.params;
 
   useEffect(() => {
     fetchMentorDetails();
@@ -22,10 +22,12 @@ const MentorDetailScreen = ({ route, navigation }) => {
 
   const fetchMentorDetails = async () => {
     try {
-      const { data } = await api.mentors.getById(id);
-      setMentor(data);
+      setLoading(true);
+      const response = await apiService.mentors.getById(id);
+      setMentor(response.data);
     } catch (error) {
-      console.error('Error fetching mentor details:', error);
+      console.error('Mentor detayları alınırken hata:', error);
+      Alert.alert('Hata', 'Mentor detayları alınırken bir hata oluştu.');
     } finally {
       setLoading(false);
     }
@@ -42,35 +44,36 @@ const MentorDetailScreen = ({ route, navigation }) => {
   if (!mentor) {
     return (
       <View style={styles.errorContainer}>
-        <Text>Mentor bulunamadı.</Text>
+        <Text style={styles.errorText}>Mentor bulunamadı.</Text>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Mentor Detayı</Text>
-        </View>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Mentor Detayı</Text>
+      </View>
 
-        {/* Mentor Info */}
-        <View style={styles.mentorInfo}>
+      <ScrollView style={styles.content}>
+        <View style={styles.profileSection}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{mentor.name.charAt(0)}</Text>
+          </View>
           <Text style={styles.name}>{mentor.name}</Text>
           <Text style={styles.title}>{mentor.title}</Text>
-          <Text style={styles.university}>{mentor.university}</Text>
-          <Text style={styles.department}>{mentor.department}</Text>
+          <Text style={styles.institution}>
+            {mentor.department} • {mentor.university}
+          </Text>
         </View>
 
-        {/* Stats */}
-        <View style={styles.statsContainer}>
+        <View style={styles.statsSection}>
           <View style={styles.statItem}>
             <Text style={styles.statNumber}>{mentor.projects || 0}</Text>
             <Text style={styles.statLabel}>Aktif Proje</Text>
@@ -85,31 +88,136 @@ const MentorDetailScreen = ({ route, navigation }) => {
           </View>
         </View>
 
-        {/* Expertise */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Uzmanlık Alanları</Text>
           <View style={styles.expertiseContainer}>
-            {Array.isArray(mentor.expertise) && mentor.expertise.map((skill, index) => (
+            {mentor.expertise && mentor.expertise.map((item, index) => (
               <View key={index} style={styles.expertiseItem}>
-                <Text style={styles.expertiseText}>{skill}</Text>
+                <Text style={styles.expertiseText}>{item}</Text>
               </View>
             ))}
           </View>
         </View>
 
-        {/* Contact Button */}
         <TouchableOpacity style={styles.contactButton}>
           <Text style={styles.contactButtonText}>İletişime Geç</Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    backgroundColor: '#3b82f6',
+    paddingTop: 50,
+    paddingBottom: 15,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    marginRight: 15,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  content: {
+    flex: 1,
+  },
+  profileSection: {
+    alignItems: 'center',
+    padding: 20,
     backgroundColor: '#fff',
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  avatarText: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  name: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  title: {
+    fontSize: 18,
+    color: '#666',
+    marginBottom: 5,
+  },
+  institution: {
+    fontSize: 16,
+    color: '#666',
+  },
+  statsSection: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    marginTop: 10,
+    padding: 15,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#3b82f6',
+  },
+  statLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  section: {
+    backgroundColor: '#fff',
+    marginTop: 10,
+    padding: 15,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  expertiseContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  expertiseItem: {
+    backgroundColor: '#e5e7eb',
+    borderRadius: 15,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    margin: 3,
+  },
+  expertiseText: {
+    color: '#4b5563',
+  },
+  contactButton: {
+    backgroundColor: '#3b82f6',
+    margin: 15,
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  contactButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   loadingContainer: {
     flex: 1,
@@ -121,97 +229,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  backButton: {
-    marginRight: 16,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  mentorInfo: {
-    padding: 16,
-    alignItems: 'center',
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 18,
-    color: '#4b5563',
-    marginBottom: 4,
-  },
-  university: {
+  errorText: {
     fontSize: 16,
-    color: '#6b7280',
-    marginBottom: 2,
-  },
-  department: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 16,
-    backgroundColor: '#f3f4f6',
-    marginVertical: 16,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#3b82f6',
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#4b5563',
-  },
-  section: {
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  expertiseContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -4,
-  },
-  expertiseItem: {
-    backgroundColor: '#e5e7eb',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    margin: 4,
-  },
-  expertiseText: {
-    color: '#4b5563',
-    fontSize: 14,
-  },
-  contactButton: {
-    backgroundColor: '#3b82f6',
-    margin: 16,
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  contactButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#666',
   },
 });
 

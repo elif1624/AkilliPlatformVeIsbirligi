@@ -34,8 +34,8 @@ const AuthNavigator = () => (
 // Projeler Stack Navigator
 const ProjectsNavigator = () => (
   <Stack.Navigator>
-    <Stack.Screen name="ProjectsList" component={ProjectsScreen} options={{ headerShown: false }} />
-    <Stack.Screen name="ProjectDetail" component={ProjectDetailScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="ProjectsList" component={ProjectsScreen} options={{ title: 'Projeler' }} />
+    <Stack.Screen name="ProjectDetail" component={ProjectDetailScreen} options={{ title: 'Proje Detayı' }} />
     <Stack.Screen name="Applications" component={ApplicationsScreen} options={{ title: 'Başvurular' }} />
   </Stack.Navigator>
 );

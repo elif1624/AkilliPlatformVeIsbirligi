@@ -19,9 +19,9 @@ export const AuthProvider = ({ children }) => {
     // Supabase auth değişikliklerini dinle
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        setUser(session.user);
+          setUser(session.user);
       } else {
-        setUser(null);
+          setUser(null);
       }
       setLoading(false);
     });
@@ -34,8 +34,7 @@ export const AuthProvider = ({ children }) => {
   // Kullanıcı durumunu kontrol et
   const checkUser = async () => {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) throw error;
+      const session = supabase.auth.session();
       setUser(session?.user || null);
     } catch (error) {
       console.error('Error checking user session:', error.message);
@@ -84,7 +83,7 @@ export const AuthProvider = ({ children }) => {
       });
       
       if (signUpError) throw signUpError;
-
+      
       // Create the user profile in the public.users table
       const { error: profileError } = await supabase
         .from('users')

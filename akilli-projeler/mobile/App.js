@@ -4,6 +4,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
+import { createClient } from '@supabase/supabase-js';
+import Constants from 'expo-constants';
 
 // React Native Paper tema yapılandırması
 const theme = {
@@ -14,6 +16,14 @@ const theme = {
     accent: '#0ea5e9',
   },
 };
+
+const supabaseUrl = Constants.expoConfig.extra.supabaseUrl;
+const supabaseKey = Constants.expoConfig.extra.supabaseKey;
+
+console.log('Supabase URL:', supabaseUrl);
+console.log('Supabase KEY:', supabaseKey);
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default function App() {
   return (

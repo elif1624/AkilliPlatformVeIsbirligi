@@ -1,25 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Supabase URL ve API anahtarını tanımla
-const supabaseUrl = 'https://mmdgtacdykxjtgmepmcq.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tZGd0YWNkeWt4anRnbWVwbWNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQwMTQ5NjIsImV4cCI6MjA1OTU5MDk2Mn0.DnHmDQvVzeU09tIyWJVVNNYDkS3SnlTa9p5axZE29r8';
+// Supabase URL ve API anahtarını ortam değişkenlerinden al
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_KEY;
 
 // Supabase istemcisini oluştur
 const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-    flowType: 'pkce',
-    debug: __DEV__,
-  },
-  global: {
-    headers: {
-      'apikey': supabaseKey,
-    },
-  },
+  localStorage: AsyncStorage,
+  detectSessionInUrl: false,
 });
 
 // Auth state değişikliklerini dinle

@@ -1,90 +1,102 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import apiService from '../../services/api';
+import supabase from '../../services/supabase';
+
+const EditProfileModal = ({ visible, onClose, profile, onSave }) => {
+  const [about, setAbout] = useState(profile?.bio || '');
+  const [skills, setSkills] = useState(profile?.skills?.join(', ') || '');
+  const [links, setLinks] = useState(profile?.links?.map(l => l.url).join('\n') || '');
+
+  useEffect(() => {
+    setAbout(profile?.bio || '');
+    setSkills(profile?.skills?.join(', ') || '');
+    setLinks(profile?.links?.map(l => l.url).join('\n') || '');
+  }, [profile]);
+
+  const handleSave = () => {
+    const updatedProfile = {
+      ...profile,
+      bio: about,
+      skills: skills.split(',').map(s => s.trim()).filter(Boolean),
+      links: links.split('\n').map(url => ({ type: 'custom', url: url.trim() })).filter(l => l.url),
+    };
+    onSave(updatedProfile);
+    onClose();
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ backgroundColor: '#fff', borderRadius: 10, padding: 20, width: '90%' }}>
+          <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 10 }}>Profili Düzenle</Text>
+          <Text style={{ marginTop: 10 }}>Hakkımda</Text>
+          <TextInput
+            value={about}
+            onChangeText={setAbout}
+            placeholder="Kendinizden bahsedin..."
+            multiline
+            style={{ borderWidth: 1, borderColor: '#eee', borderRadius: 8, padding: 8, minHeight: 60, marginBottom: 10 }}
+          />
+          <Text>Uzmanlık Alanları (virgülle ayırın)</Text>
+          <TextInput
+            value={skills}
+            onChangeText={setSkills}
+            placeholder="Yapay Zeka, Veri Madenciliği, ..."
+            style={{ borderWidth: 1, borderColor: '#eee', borderRadius: 8, padding: 8, marginBottom: 10 }}
+          />
+          <Text>Bağlantılar (her satıra bir link)</Text>
+          <TextInput
+            value={links}
+            onChangeText={setLinks}
+            placeholder="https://linkedin.com/in/...\nhttps://scholar.google.com/..."
+            multiline
+            style={{ borderWidth: 1, borderColor: '#eee', borderRadius: 8, padding: 8, minHeight: 40, marginBottom: 10 }}
+          />
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+            <TouchableOpacity onPress={onClose} style={{ marginRight: 15 }}><Text>İptal</Text></TouchableOpacity>
+            <TouchableOpacity onPress={handleSave}><Text style={{ color: '#3b82f6', fontWeight: 'bold' }}>Kaydet</Text></TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
 
 const ProfileScreen = ({ navigation }) => {
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('about');
   const [loading, setLoading] = useState(true);
+  const [editVisible, setEditVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchProfileData();
+    // const interval = setInterval(() => {
+    //   fetchProfileData();
+    // }, 5000); // 5 saniyede bir yenile
+    // return () => clearInterval(interval);
   }, []);
 
   const fetchProfileData = async () => {
     try {
       setLoading(true);
-      
-      if (user) {
-        // API'den kullanıcı profilini getir
-        // const response = await apiService.users.getById(user.id);
-        // setProfile(response.data);
-        
-        // Şimdilik örnek veri kullanıyoruz
-        setProfile({
-          id: 1,
-          name: 'Ahmet Yılmaz',
-          university: 'Fırat Üniversitesi',
-          department: 'Yazılım Mühendisliği',
-          year: 3,
-          role: 'student',
-          bio: 'Yapay zeka ve veri bilimi alanlarında çalışmalar yapıyorum. Özellikle doğal dil işleme ve bilgisayarlı görü konularında deneyim sahibiyim.',
-          skills: ['Python', 'Machine Learning', 'Deep Learning', 'Computer Vision', 'NLP'],
-          projects: [
-            {
-              id: 1,
-              title: 'Makine Öğrenmesi Projesi',
-              academic: 'Prof. Dr. Ayşe Kaya',
-              progress: 65,
-              deadline: '2024-05-30',
-            },
-            {
-              id: 2,
-              title: 'Veri Analizi Araştırması',
-              academic: 'Doç. Dr. Mehmet Demir',
-              progress: 40,
-              deadline: '2024-06-15',
-            },
-          ],
-          applications: [
-            {
-              id: 1,
-              project: {
-                id: 3,
-                title: 'Derin Öğrenme ile Görüntü Sınıflandırma',
-                academic: 'Prof. Dr. Ali Yılmaz',
-                status: 'pending',
-              },
-            },
-            {
-              id: 2,
-              project: {
-                id: 4,
-                title: 'NLP Tabanlı Duygu Analizi',
-                academic: 'Dr. Zeynep Demir',
-                status: 'rejected',
-              },
-            },
-          ],
-          stats: {
-            projects: 45,
-            applications: 1200,
-            mentors: 18,
-          },
-          links: [
-            { type: 'linkedin', url: 'https://linkedin.com/in/ahmetyilmaz' },
-            { type: 'github', url: 'https://github.com/ahmetyilmaz' },
-            { type: 'website', url: 'https://ahmetyilmaz.com' },
-          ],
-        });
-      }
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user?.id)
+        .single();
+      if (error) throw error;
+      setProfile(data || {});
     } catch (error) {
-      console.error('Profil bilgileri alınırken hata oluştu:', error);
+      console.error('Profil verisi alınırken hata oluştu:', error);
+      setProfile({});
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -109,6 +121,11 @@ const ProfileScreen = ({ navigation }) => {
     );
   };
 
+  const handleEditSave = (updatedProfile) => {
+    setProfile(updatedProfile);
+    // Burada ileride Supabase'a güncelleme isteği atılacak
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -117,10 +134,10 @@ const ProfileScreen = ({ navigation }) => {
     );
   }
 
-  if (!profile) {
+  if (!profile || Object.keys(profile).length === 0) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Profil bilgileri yüklenemedi.</Text>
+        <Text style={styles.errorText}>Profil bilgileri bulunamadı. Lütfen hesabınızı tamamlayın veya tekrar giriş yapın.</Text>
         <TouchableOpacity
           style={styles.retryButton}
           onPress={fetchProfileData}
@@ -143,9 +160,14 @@ const ProfileScreen = ({ navigation }) => {
             />
             <Text style={styles.appName}>ProjeHub</Text>
           </View>
-          <TouchableOpacity onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={24} color="#fff" />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => setEditVisible(true)} style={{ marginRight: 10 }}>
+              <Ionicons name="create-outline" size={24} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -173,15 +195,15 @@ const ProfileScreen = ({ navigation }) => {
 
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{profile.stats.projects}</Text>
+            <Text style={styles.statValue}>{profile.stats?.projects || 0}</Text>
             <Text style={styles.statLabel}>Proje</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{profile.stats.applications}</Text>
+            <Text style={styles.statValue}>{profile.stats?.applications || 0}</Text>
             <Text style={styles.statLabel}>Başvuru</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{profile.stats.mentors}</Text>
+            <Text style={styles.statValue}>{profile.stats?.mentors || 0}</Text>
             <Text style={styles.statLabel}>Mentor</Text>
           </View>
         </View>
@@ -335,6 +357,12 @@ const ProfileScreen = ({ navigation }) => {
           </View>
         )}
       </ScrollView>
+      <EditProfileModal
+        visible={editVisible}
+        onClose={() => setEditVisible(false)}
+        profile={profile}
+        onSave={handleEditSave}
+      />
     </View>
   );
 };
