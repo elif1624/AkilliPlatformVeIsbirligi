@@ -1,0 +1,1 @@
+// Genel sabitler burada tanımlanacak 
